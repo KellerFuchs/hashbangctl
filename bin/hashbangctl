@@ -7,6 +7,8 @@ from ConfigParser import ConfigParser
 from provisor import Provisor
 from provisor.utils import getch, validate_pubkey, drop_privileges
 
+# All commented-out code is moved to hashbanglib
+'''
 SUDO_USER = os.environ.get('SUDO_USER')
 CONF_FILE = '/etc/hashbangctl.conf'
 
@@ -40,7 +42,7 @@ user = {
     'email': ldap_user['mailRoutingAddress'][0],
     'pubkeys': ldap_user['sshPublicKey'],
 }
-
+'''
 menu_items = [
     ('n',"Change Name"),
     ('s',"Change Shell"),
@@ -59,9 +61,9 @@ def main_menu():
     print("  Email : %s" % user['email'])
     print("  Shell : %s" % user['shell'])
     print("  SSH Public Keys:")
-    for key in user['pubkeys']:
+    for key in hashbanglib.user['pubkeys']:
         print(textwrap.fill(
-            "%s. %s" % (user['pubkeys'].index(key),key),
+            "%s. %s" % (hashbanglib.user['pubkeys'].index(key),key),
             width=74,
             initial_indent='    ',
             subsequent_indent='       '
@@ -71,19 +73,20 @@ def main_menu():
         print("  %s - %s" % (key,desc))
     sys.stdout.write('> ')
 
-
+'''
 def ldap_sync():
     p.modify_user(
         SUDO_USER,
         pubkeys = user['pubkeys'],
         shell = user['shell'],
         name = user['name'],
-    ) 
+    )
+'''
 
 main_menu()
 
 while True:
- 
+
     key = getch()
 
     if key in [ key for k,v in menu_items ]:
@@ -96,8 +99,8 @@ while True:
         main_menu()
 
     elif key == 'n':
-        user['name'] = raw_input("Enter new name: ")
-        ldap_sync();
+        hashbanglib.user['name'] = raw_input("Enter new name: ")
+        hashbanglib.ldap_sync();
         print('\nName Updated.')
         print('\nPlease press [Enter] to continue')
 
@@ -107,8 +110,8 @@ while True:
         if shell not in ['/bin/bash','/bin/zsh','/bin/ksh','/bin/fish']:
             print('Error: \n"%s" is not an available shell' % shell)
         else:
-            user['shell'] = shell
-            ldap_sync()
+            hashbanglib.user['shell'] = shell
+            hashbanglib.ldap_sync()
             print('\nShell Updated.')
 
         print('\nPlease press [Enter] to continue')
@@ -122,18 +125,18 @@ while True:
         except Exception, e:
             print("\nError: %s" % e)
 
-        if pubkey in user['pubkeys']:
+        if pubkey in hashbanglib.user['pubkeys']:
             print('\nPublic Key already exists.')
 
         elif valid_pubkey:
-            user['pubkeys'].append(pubkey)
-            ldap_sync()
+            hashbanglib.user['pubkeys'].append(pubkey)
+            hashbanglib.ldap_sync()
             print('\nPublic Keys updated.')
 
         print('\nPlease press [Enter] to continue')
-                
+
     elif key == 'd':
-        if (len(user['pubkeys']) == 0):
+        if (len(hashbanglib.user['pubkeys']) == 0):
             print('\nThere are no SSH Public Keys to delete')
         else:
             print('Press the number of the key you wish to delete')
@@ -142,10 +145,10 @@ while True:
             delkey = getch()
             if ord(delkey) == 27: #Esc
                 main_menu()
-            elif ord(delkey) >= ord('0') and ord(delkey) <= ord(str(len(user['pubkeys']))):
+            elif ord(delkey) >= ord('0') and ord(delkey) <= ord(str(len(hashbanglib.user['pubkeys']))):
                 print(delkey)
-                del user['pubkeys'][int(delkey)]
-                ldap_sync()
+                del hashbanglib.user['pubkeys'][int(delkey)]
+                hashbanglib.ldap_sync()
                 print('\nKey Deleted: %s' % delkey)
             else:
                 print('\nInvalid key number specified')
