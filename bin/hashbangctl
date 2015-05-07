@@ -2,10 +2,11 @@
 
 import os
 import sys
+import getopt
 import textwrap
-from ConfigParser import ConfigParser
-from provisor import Provisor
-from provisor.utils import getch, validate_pubkey, drop_privileges
+#from ConfigParser import ConfigParser
+#from provisor import Provisor
+#from provisor.utils import getch, validate_pubkey, drop_privileges
 
 # All commented-out code is moved to hashbanglib
 '''
@@ -51,28 +52,6 @@ menu_items = [
     ('q',"Quit\n"),
 ]
 
-
-def main_menu():
-    print("\nLDAP User Details:\n")
-    print("  Login : %s" % user['login'])
-    print("  UID   : %s" % user['uid'])
-    print("  Host  : %s" % user['host'])
-    print("  Name  : %s" % user['name'])
-    print("  Email : %s" % user['email'])
-    print("  Shell : %s" % user['shell'])
-    print("  SSH Public Keys:")
-    for key in hashbanglib.user['pubkeys']:
-        print(textwrap.fill(
-            "%s. %s" % (hashbanglib.user['pubkeys'].index(key),key),
-            width=74,
-            initial_indent='    ',
-            subsequent_indent='       '
-        ))
-    print("\nActions:\n")
-    for key,desc in menu_items:
-        print("  %s - %s" % (key,desc))
-    sys.stdout.write('> ')
-
 '''
 def ldap_sync():
     p.modify_user(
@@ -83,77 +62,195 @@ def ldap_sync():
     )
 '''
 
-main_menu()
 
-while True:
+if len(sys.argv) == 1:
+    # interactive mode
+    def main_menu():
+        print("\nLDAP User Details:\n")
+        print("  Login : %s" % user['login'])
+        print("  UID   : %s" % user['uid'])
+        print("  Host  : %s" % user['host'])
+        print("  Name  : %s" % user['name'])
+        print("  Email : %s" % user['email'])
+        print("  Shell : %s" % user['shell'])
+        print("  SSH Public Keys:")
+        for key in hashbanglib.user['pubkeys']:
+            print(textwrap.fill(
+                "%s. %s" % (hashbanglib.user['pubkeys'].index(key),key),
+                width=74,
+                initial_indent='    ',
+                subsequent_indent='       '
+            ))
+        print("\nActions:\n")
+        for key,desc in menu_items:
+            print("  %s - %s" % (key,desc))
+        sys.stdout.write('> ')
 
-    key = getch()
+    main_menu()
 
-    if key in [ key for k,v in menu_items ]:
-        print("%s\n" % key)
+    while True:
 
-    if ord(key) == 3: # <Ctrl+C>
-        break;
+        key = getch()
 
-    elif key == '\r': # <Enter>
-        main_menu()
+        if key in [ key for k,v in menu_items ]:
+            print("%s\n" % key)
 
-    elif key == 'n':
-        hashbanglib.user['name'] = raw_input("Enter new name: ")
-        hashbanglib.ldap_sync();
-        print('\nName Updated.')
-        print('\nPlease press [Enter] to continue')
+        if ord(key) == 3: # <Ctrl+C>
+            break;
 
-    elif key == 's':
-        shell = raw_input("Enter new shell, eg /bin/bash:")
+        elif key == '\r': # <Enter>
+            main_menu()
 
-        if shell not in ['/bin/bash','/bin/zsh','/bin/ksh','/bin/fish']:
-            print('Error: \n"%s" is not an available shell' % shell)
-        else:
-            hashbanglib.user['shell'] = shell
-            hashbanglib.ldap_sync()
-            print('\nShell Updated.')
+        elif key == 'n':
+            hashbanglib.user['name'] = raw_input("Enter new name: ")
+            hashbanglib.ldap_sync();
+            print('\nName Updated.')
+            print('\nPlease press [Enter] to continue')
 
-        print('\nPlease press [Enter] to continue')
+        elif key == 's':
+            shell = raw_input("Enter new shell, eg /bin/bash:")
 
-    elif key == 'a':
-        pubkey = raw_input("Paste SSH Public Key to be added:\n")
-        valid_pubkey = False;
-        try:
-            validate_pubkey(pubkey)
-            valid_pubkey = True
-        except Exception, e:
-            print("\nError: %s" % e)
-
-        if pubkey in hashbanglib.user['pubkeys']:
-            print('\nPublic Key already exists.')
-
-        elif valid_pubkey:
-            hashbanglib.user['pubkeys'].append(pubkey)
-            hashbanglib.ldap_sync()
-            print('\nPublic Keys updated.')
-
-        print('\nPlease press [Enter] to continue')
-
-    elif key == 'd':
-        if (len(hashbanglib.user['pubkeys']) == 0):
-            print('\nThere are no SSH Public Keys to delete')
-        else:
-            print('Press the number of the key you wish to delete')
-            print('(Or Press ESC to Cancel)')
-            sys.stdout.write('\n> ')
-            delkey = getch()
-            if ord(delkey) == 27: #Esc
-                main_menu()
-            elif ord(delkey) >= ord('0') and ord(delkey) <= ord(str(len(hashbanglib.user['pubkeys']))):
-                print(delkey)
-                del hashbanglib.user['pubkeys'][int(delkey)]
-                hashbanglib.ldap_sync()
-                print('\nKey Deleted: %s' % delkey)
+            if shell not in ['/bin/bash','/bin/zsh','/bin/ksh','/bin/fish']:
+                print('Error: \n"%s" is not an available shell' % shell)
             else:
-                print('\nInvalid key number specified')
+                hashbanglib.user['shell'] = shell
+                hashbanglib.ldap_sync()
+                print('\nShell Updated.')
 
             print('\nPlease press [Enter] to continue')
 
-    elif key == 'q':
-        break;
+        elif key == 'a':
+            pubkey = raw_input("Paste SSH Public Key to be added:\n")
+            valid_pubkey = False;
+            try:
+                validate_pubkey(pubkey)
+                valid_pubkey = True
+            except Exception, e:
+                print("\nError: %s" % e)
+
+            if pubkey in hashbanglib.user['pubkeys']:
+                print('\nPublic Key already exists.')
+
+            elif valid_pubkey:
+                hashbanglib.user['pubkeys'].append(pubkey)
+                hashbanglib.ldap_sync()
+                print('\nPublic Keys updated.')
+
+            print('\nPlease press [Enter] to continue')
+
+        elif key == 'd':
+            if (len(hashbanglib.user['pubkeys']) == 0):
+                print('\nThere are no SSH Public Keys to delete')
+            else:
+                print('Press the number of the key you wish to delete')
+                print('(Or Press ESC to Cancel)')
+                sys.stdout.write('\n> ')
+                delkey = getch()
+                if ord(delkey) == 27: #Esc
+                    main_menu()
+                elif ord(delkey) >= ord('0') and ord(delkey) <= ord(str(len(hashbanglib.user['pubkeys']))):
+                    print(delkey)
+                    del hashbanglib.user['pubkeys'][int(delkey)]
+                    hashbanglib.ldap_sync()
+                    print('\nKey Deleted: %s' % delkey)
+                else:
+                    print('\nInvalid key number specified')
+
+                print('\nPlease press [Enter] to continue')
+
+        elif key == 'q':
+            break;
+else:
+    # command line wizard mode
+    '''
+    usage: hashbangctl [OPTIONS]
+
+        -n <name>
+        -s <shell>
+        -a <-p <keypath> | <key>>
+        -d <-p <keypath> | <key>>
+    '''
+    def usage():
+        print("usage: hashbangctl [OPTIONS]")
+        print("")
+        print("\t-n <name>    | Sets [n]ame")
+        print("\t-s <shell>   | Sets user's [s]hell")
+        print("\t-a <key>     | [A]dds a public authentication key")
+        print("\t-a <path> -p | [A]dds a public authentication key from [p]ath")
+        print("\t-d <key>     | [D]eletes a public authentication key")
+        print("\t-d <path> -p | [D]eletes a public authentication key from [p]ath")
+        print("")
+
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "n:s:a:d:p")
+    except getopt.GetoptError as err:
+        print(str(err))
+        usage()
+        sys.exit(2)
+
+    print( opts )
+
+    for tup in opts:
+        if tup[0] == "-n":
+            # Set name code
+            print( tup[0] )
+
+        elif tup[0] == "-s":
+            # Set shell code
+            print( tup[0] )
+
+        elif tup[0] == "-a":
+            # Add public key
+
+            path = (("-p","") in opts)
+            key = tup[1]
+            if path:
+                try:
+                    with open( key, 'r' ) as keyfile:
+                        key = keyfile.read()
+                except Exception as err:
+                    print("Unhandled exception: {0}" % str(err))
+
+                valid_pubkey = False;
+                try:
+                    validate_pubkey(key)
+                    valid_pubkey = True
+                except Exception, e:
+                    print("\nError: %s" % e)
+                    sys.exit(2)
+
+                if pubkey in hashbanglib.user['pubkeys']:
+                    print('\nPublic Key already exists.')
+                    sys.exit(2)
+
+                elif valid_pubkey:
+                    hashbanglib.user['pubkeys'].append(pubkey)
+                    hashbanglib.ldap_sync()
+                    print('\nPublic Keys updated.')
+                    sys.exit(0)
+
+        elif tup[0] == "-d":
+            # Remove public key
+
+            path = (("-p","") in opts)
+            key = tup[1]
+            if path:
+                try:
+                    with open( key, 'r' ) as keyfile:
+                        key = keyfile.read()
+                except Exception as err:
+                    print("Unhandled exception: {0}" % str(err))
+
+            if (len(hashbanglib.user['pubkeys']) == 0):
+                print('\nThere are no SSH Public Keys to delete')
+                sys.exit(2)
+            else:
+                delkey = int(tup[1])
+                if delkey > 0 and delkey <= str(len(hashbanglib.user['pubkeys'])):
+                    del hashbanglib.user['pubkeys'][int(delkey)]
+                    hashbanglib.ldap_sync()
+                    print('\nKey Deleted: %s' % delkey)
+                    os.exit(0)
+                else:
+                    print('\nInvalid key number specified')
+                    os.exit(2)
